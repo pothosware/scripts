@@ -1,0 +1,36 @@
+#!/bin/bash
+
+COMPONENTS="
+SoapyAirspy
+SoapyAudio
+SoapyBladeRF
+SoapyHackRF
+SoapyMultiSDR
+SoapyOsmo
+SoapyRedPitaya
+SoapyRemote
+SoapyRTLSDR
+SoapySDRPlay
+SoapyUHD
+"
+
+ROOT=$1
+
+if [[ -z "${ROOT}" ]]; then
+    echo "Usage: $0 [root path]"
+    exit -1
+fi
+
+for PREFIX in $COMPONENTS; do
+    echo "======== ${PREFIX} ========"
+    pushd ${ROOT}/docs/${PREFIX}.wiki
+    git co master
+    git pull origin master
+    cp ../SoapySDR.wiki/_Sidebar.rest .
+    cp ../SoapySDR.wiki/_Footer.md .
+    git add _Sidebar.rest
+    git add _Footer.md
+    git ci -am "updated sidebar"
+    git push origin master
+    popd
+done

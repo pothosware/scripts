@@ -1,0 +1,61 @@
+#!/bin/bash
+
+#clone repo structure if it does not exist
+
+REPOS="
+gnuradio-companion-exe
+gr-pothos
+pothos
+pothos-audio
+pothos-blocks
+pothos-comms
+pothos-demos
+pothos-gui
+pothos-iio
+pothos-java
+pothos-opencl
+pothos-plotters
+pothos-python
+pothos-sdr
+pothos-widgets
+PothosLiquidDSP
+SoapyAirspy
+SoapyAudio
+SoapyBladeRF
+SoapyHackRF
+SoapyMultiSDR
+SoapyOsmo
+SoapyRedPitaya
+SoapyRemote
+SoapyRTLSDR
+SoapySDR
+SoapySDRPlay
+SoapyUHD
+"
+
+ROOT=$1
+
+if [[ -z "${ROOT}" ]]; then
+    echo "Usage: $0 [root path]"
+    exit -1
+fi
+
+echo "Cloning repos into ${ROOT}"
+
+for REPO in $REPOS; do
+    GIT_REPO=${ROOT}/${REPO}/
+    GIT_URL=git@github.com:pothosware/${REPO}.git
+    if [ ! -d "$GIT_REPO" ]; then
+        echo "Cloning into $GIT_REPO"
+        git clone $GIT_URL $GIT_REPO
+    fi
+
+    GIT_REPO=${ROOT}/docs/${REPO}.wiki/
+    GIT_URL=git@github.com:pothosware/${REPO}.wiki.git
+    if [ ! -d "$GIT_REPO" ]; then
+        echo "Cloning into $GIT_REPO"
+        git clone $GIT_URL $GIT_REPO
+    fi
+done
+
+echo "Done!"

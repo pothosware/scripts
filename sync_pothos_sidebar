@@ -1,0 +1,37 @@
+#!/bin/bash
+
+COMPONENTS="
+gr-pothos
+pothos-audio
+pothos-blocks
+pothos-comms
+pothos-demos
+pothos-gui
+pothos-iio
+pothos-java
+pothos-opencl
+pothos-plotters
+pothos-python
+pothos-sdr
+pothos-widgets
+PothosLiquidDSP
+"
+
+ROOT=$1
+
+if [[ -z "${ROOT}" ]]; then
+    echo "Usage: $0 [root path]"
+    exit -1
+fi
+
+for PREFIX in $COMPONENTS; do
+    echo "======== ${PREFIX} ========"
+    pushd ${ROOT}/docs/${PREFIX}.wiki
+    git co master
+    git pull origin master
+    cp ../pothos.wiki/_Sidebar.rest .
+    git add _Sidebar.rest
+    git ci -am "updated sidebar"
+    git push origin master
+    popd
+done
