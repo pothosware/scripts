@@ -1,0 +1,125 @@
+#!/usr/bin/env python3
+
+import os
+import re
+import sys
+import datetime
+import subprocess
+import email.utils
+
+def git_cmd(d, *args):
+    args = ['"%s"'%a if ' ' in a else a for a in args]
+    cmd = 'git -C %s %s'%(d, ' '.join(args))
+    print(cmd)
+    proc = subprocess.Popen(args=[cmd], stdout=subprocess.PIPE, shell=True)
+    if proc.wait() != 0: raise Exception("Failed %s"%cmd)
+    return proc.communicate()[0].decode('utf-8')
+
+def main():
+
+    #resources to write
+    repoDir = sys.argv[1]
+    assert(os.path.exists(repoDir))
+    changelogPath = os.path.join(repoDir, 'Changelog.txt')
+    debChangelogPath = os.path.join(repoDir, 'debian', 'changelog')
+    debControlPath = os.path.join(repoDir, 'debian', 'control')
+    debCopyrightPath = os.path.join(repoDir, 'debian', 'copyright')
+
+    #extract branch, ensure up to date
+    branchName = git_cmd(repoDir, 'rev-parse', '--abbrev-ref', 'HEAD').strip()
+
+    #maintainer
+    debfullname = os.environ.get('DEBFULLNAME')
+    debemail = os.environ.get('DEBEMAIL')
+    assert(debfullname)
+    assert(debemail)
+
+    #get a new date
+    date = datetime.datetime.now()
+    yyyymmdd = '%s-%0.2d-%0.2d'%(date.year, date.month, date.day)
+    rfc2822 = email.utils.format_datetime(date)
+
+    #modifications to the changelog
+    changelogOut = list()
+    for line in open(changelogPath).readlines():
+        m = re.match('^Release ([\.0-9a-z]+) \(pending\)$', line.strip())
+        if m:
+            line = line.replace('pending', yyyymmdd)
+            changelogHeader = line.strip()
+            version = m.groups()[0]
+        changelogOut.append(line)
+    assert(changelogHeader)
+    assert(version)
+
+    #modifications to the copyright
+    debCopyrightOut = list()
+    for line in open(debCopyrightPath).readlines():
+        m = re.match('Copyright \(c\) ((\d+)-(\d+)) %s <%s>'%(debfullname, debemail), line.strip())
+        if m:
+            line = line.replace(m.groups()[0], '%s-%d'%(m.groups()[1], date.year))
+        debCopyrightOut.append(line)
+
+    #extract deb source name
+    debSource = None
+    for line in open(debControlPath).readlines():
+        if line.startswith('Source:'):
+            debSource = line.split('Source:')[1].strip()
+    debVer = version + '-1'
+
+    #write entry into the debian changelog
+    debChangelogEntry = """\
+%s (%s) unstable; urgency=low
+
+  * %s
+
+ -- %s <%s>  %s"""%(
+    debSource, debVer, changelogHeader, debfullname, debemail, rfc2822)
+    debChangelogOut = debChangelogEntry + '\n\n' + open(debChangelogPath).read()
+
+    #making a tag and pushing it
+    tags = git_cmd(repoDir, 'tag', '-n').strip().splitlines()
+    if not tags: raise Exception("No tags found in git tag -n")
+    tag0 = tags[0]
+    try:
+        tag_name, tag_desc = tag0.split(' ', 1)
+        tag_prefix, tag_oldver = tag_name.rsplit('-', 1)
+    except Exception as ex:
+        raise Exception("Failed to parse '%s': %s"%(tag0, str(ex)))
+
+    print('Commit summary:')
+    print('  branch=%s'%branchName)
+    print('  version=%s'%version)
+    commitMessage = '%s: changelog entry for %s'%(debSource, version)
+    print('  '+commitMessage)
+    print('  Maintainer %s <%s>'%(debfullname, debemail))
+    print('  Date in YYYY-MM-DD = %s'%yyyymmdd)
+    print('  Date in RFC-2822 = %s'%rfc2822)
+
+    print('Tag parser summary:')
+    print('  tag_prefix=%s'%tag_prefix)
+    print('  tag_oldver=%s'%tag_oldver)
+    print('  tag_desc=%s'%tag_desc)
+
+    print('Creating new tag:')
+    newTagName = tag_prefix + '-' + version
+    newTagDesc = tag_desc.replace(tag_oldver, version)
+    print('  newTagName=%s'%newTagName)
+    print('  newTagDesc=%s'%newTagDesc)
+
+    #pull before making any changes
+    git_cmd(repoDir, 'pull', 'origin', branchName)
+
+    #write the new files result
+    open(changelogPath, 'w').write(''.join(changelogOut))
+    open(debChangelogPath, 'w').write(debChangelogOut)
+    open(debCopyrightPath, 'w').write(''.join(debCopyrightOut))
+
+    #make the commit, make the tag
+    git_cmd(repoDir, 'commit', '-a', '-m', commitMessage)
+    git_cmd(repoDir, 'tag', '-a', newTagName, '-m', newTagDesc)
+
+    #push the branch, push the tag
+    git_cmd(repoDir, 'push', 'origin', branchName)
+    git_cmd(repoDir, 'push', 'origin', newTagName)
+
+if __name__ == '__main__': main()
