@@ -82,6 +82,7 @@ def main():
     tag0 = tags[0]
     try:
         tag_name, tag_desc = tag0.split(' ', 1)
+        tag_desc = tag_desc.strip()
         tag_prefix, tag_oldver = tag_name.rsplit('-', 1)
     except Exception as ex:
         raise Exception("Failed to parse '%s': %s"%(tag0, str(ex)))
