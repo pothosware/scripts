@@ -18,7 +18,7 @@ def git_cmd(d, *args):
 def main():
 
     #resources to write
-    repoDir = sys.argv[1]
+    repoDir = os.path.abspath(sys.argv[1])
     assert(os.path.exists(repoDir))
     changelogPath = os.path.join(repoDir, 'Changelog.txt')
     debChangelogPath = os.path.join(repoDir, 'debian', 'changelog')
@@ -105,6 +105,8 @@ def main():
     newTagDesc = tag_desc.replace(tag_oldver, version)
     print('  newTagName=%s'%newTagName)
     print('  newTagDesc=%s'%newTagDesc)
+
+    input("Press Enter to continue...")
 
     #pull before making any changes
     git_cmd(repoDir, 'pull', 'origin', branchName)
