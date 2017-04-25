@@ -24,6 +24,7 @@ def main():
     debChangelogPath = os.path.join(repoDir, 'debian', 'changelog')
     debControlPath = os.path.join(repoDir, 'debian', 'control')
     debCopyrightPath = os.path.join(repoDir, 'debian', 'copyright')
+    debRulesPath = os.path.join(repoDir, 'debian', 'rules')
 
     #extract branch, ensure up to date
     branchName = git_cmd(repoDir, 'rev-parse', '--abbrev-ref', 'HEAD').strip()
@@ -111,6 +112,9 @@ def main():
 
     #pull before making any changes
     git_cmd(repoDir, 'pull', 'origin', branchName)
+
+    #ensure rules is executable
+    os.system('chmod +x %s'%debRulesPath)
 
     #write the new files result
     open(changelogPath, 'w').write(''.join(changelogOut))
