@@ -1,0 +1,83 @@
+#!/usr/bin/env python3
+
+import os
+import re
+import sys
+import subprocess
+
+def git_cmd(d, *args):
+    args = ['"%s"'%a if ' ' in a else a for a in args]
+    cmd = 'git -C %s %s'%(d, ' '.join(args))
+    print(cmd)
+    proc = subprocess.Popen(args=[cmd], stdout=subprocess.PIPE, shell=True)
+    if proc.wait() != 0: raise Exception("Failed %s"%cmd)
+    return proc.communicate()[0].decode('utf-8')
+
+SUBMODULES = [
+'SoapyAirspy',
+'SoapyAudio',
+'SoapyBladeRF',
+'SoapyHackRF',
+'SoapyOsmo',
+'SoapyRedPitaya',
+'SoapyRemote',
+'SoapyRTLSDR',
+'SoapyUHD',
+]
+
+def main():
+    if len(sys.argv) != 3:
+        print("Usage: %s [root path] [branch name]"%sys.argv[0])
+        exit(-1)
+    ROOT = sys.argv[1]
+    BRANCH = sys.argv[2]
+
+    #extract ABI
+    for line in open(os.path.join(ROOT, 'SoapySDR', 'include', 'SoapySDR', 'Version.h')).readlines():
+        m = re.match('#define SOAPY_SDR_ABI_VERSION "(.+)"', line.strip())
+        if m: libraryABI = m.groups()[0]
+    assert(libraryABI)
+    print("libraryABI=%s"%libraryABI)
+
+    #extract Standards-Version
+    for line in open(os.path.join(ROOT, 'SoapySDR', 'debian', 'control')).readlines():
+        m = re.match('Standards-Version:\s*(.+)', line.strip())
+        if m: standardsVersion = m.groups()[0]
+    assert(standardsVersion)
+    print("standardsVersion=%s"%standardsVersion)
+
+    for SUBMODULE in SUBMODULES:
+
+        debianDir = os.path.join(ROOT, SUBMODULE, 'debian')
+
+        #switch to branch
+        git_cmd(debianDir, 'checkout', BRANCH)
+        git_cmd(debianDir, 'pull', 'origin', BRANCH)
+
+        #rewrite files
+        for resource in ['control', 'rules']:
+            outputLines = list()
+            outputFile = os.path.join(debianDir, resource)
+            for line in open(outputFile).readlines():
+                m = re.match('Standards-Version:\s*(.+)', line.strip())
+                if m: line = line.replace(m.groups()[0], standardsVersion)
+                m = re.match('.*soapysdr(.+)-module', line.strip())
+                if m: line = line.replace('soapysdr'+m.groups()[0], 'soapysdr'+libraryABI)
+                outputLines.append(line)
+            open(outputFile, 'w').write(''.join(outputLines))
+
+        #ensure rules is executable
+        os.system('chmod +x %s'%os.path.join(debianDir, 'rules'))
+
+        #move file for new ABI
+        for fileName in os.listdir(debianDir):
+            m = re.match('.*soapysdr(.+)-module', fileName)
+            if m:
+                newFileName = fileName.replace('soapysdr'+m.groups()[0], 'soapysdr'+libraryABI)
+                git_cmd(debianDir, 'mv', fileName, newFileName)
+
+        #make the commit
+        git_cmd(debianDir, 'commit', '-a', '-m', 'debian: updated to soapysdr%s module ABI'%libraryABI)
+        git_cmd(debianDir, 'push', 'origin', BRANCH)
+
+if __name__ == '__main__': main()
