@@ -1,0 +1,57 @@
+#!/usr/bin/env python3
+
+import os
+import re
+import sys
+import subprocess
+import requests
+from hashlib import sha256
+
+def git_cmd(d, *args):
+    args = ['"%s"'%a if ' ' in a else a for a in args]
+    cmd = 'git -C %s %s'%(d, ' '.join(args))
+    print(cmd)
+    proc = subprocess.Popen(args=[cmd], stdout=subprocess.PIPE, shell=True)
+    if proc.wait() != 0: raise Exception("Failed %s"%cmd)
+    return proc.communicate()[0].decode('utf-8')
+
+def main():
+    if len(sys.argv) != 2:
+        print("Usage: %s [root path]"%sys.argv[0])
+        exit(-1)
+    ROOT = os.path.abspath(sys.argv[1])
+
+    homebrew_pothos_dir = os.path.join(ROOT, 'homebrew-pothos')
+    for fname in os.listdir(homebrew_pothos_dir):
+        if not fname.endswith('.rb'): continue
+        fpath = os.path.join(homebrew_pothos_dir, fname)
+        outlines = list()
+        newSha256 = None
+        print('Processing %s'%fpath)
+        for line in open(fpath).readlines():
+            m = re.match('\s*url\s+"https://github.com/pothosware/(.+)/archive/(.+).tar.gz"', line.strip())
+            if m:
+                repoName = m.groups()[0]
+                currTag = m.groups()[1]
+                repoDir = os.path.join(ROOT, repoName)
+                git_cmd(repoDir, 'remote', 'update')
+                tags = git_cmd(repoDir, 'tag', '-n').strip().splitlines()
+                latestTag = sorted(tags)[-1].split()[0]
+                print(latestTag)
+                if latestTag != currTag:
+                    print('  Update recipe %s from %s -> %s'%(repoName, currTag, latestTag))
+                    newUrl = 'https://github.com/pothosware/%s/archive/%s.tar.gz'%(repoName, latestTag)
+                    print('  Downloading %s'%newUrl)
+                    r = requests.get(newUrl)
+                    r.raise_for_status()
+                    newSha256 = sha256(r.content).hexdigest()
+                    line = line.replace(currTag, latestTag)
+            m = re.match('\s*sha256\s+"(.+)"', line.strip())
+            if newSha256 and m:
+                line = line.replace(m.groups()[0], newSha256)
+            outlines.append(line)
+        if newSha256:
+            open(fpath, 'w').write(''.join(outlines))
+            print('  Updated %s'%fpath)
+
+if __name__ == '__main__': main()
