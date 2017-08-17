@@ -5,6 +5,7 @@ import os
 import sys
 import time
 import shutil
+import requests
 import subprocess
 from optparse import OptionParser
 from optparse import OptionGroup
@@ -16,6 +17,15 @@ print('DEBEMAIL=%s'%DEBEMAIL)
 
 DATENOW = subprocess.check_output(['date -R'], shell=True).strip()
 print('DATENOW=%s'%DATENOW)
+
+def download(url, dest):
+    print('Downloading %s...'%url)
+    response = requests.get(url, stream=True)
+    handle = open(dest, "wb")
+    for chunk in response.iter_content(chunk_size=512):
+        if chunk:  # filter out keep-alive new chunks
+            handle.write(chunk)
+    print('Done!')
 
 if __name__ == '__main__':
     parser = OptionParser()
@@ -119,6 +129,17 @@ if __name__ == '__main__':
     if options.format:
         sourceFormatPath = os.path.join(sourceTmpDir, 'debian', 'source', 'format')
         open(sourceFormatPath, 'w').write('%s\n'%options.format)
+
+    #try to get a tarball from github
+    origTarBall = os.path.join(binaryTmpDir, '%s_%s.orig.tar.gz'%(packageName, packageVersion))
+    if commitsSince == 0 and not os.path.exists(origTarBall):
+        originURL = subprocess.check_output(['git -C %s remote get-url origin'%sourceTmpDir], shell=True).strip()
+        print('originURL=%s'%originURL)
+        m = re.match('^git@github.com:(.+)/(.+)\.git$', originURL)
+        if not m: raise Exception('Cant parse URL: %s'%originURL)
+        orgName, proj = m.groups()
+        fetchURL = 'https://github.com/%s/%s/archive/%s.tar.gz'%(orgName, proj, latestTag)
+        download(fetchURL, origTarBall)
 
     #build source package
     print('Entering %s'%sourceTmpDir)
