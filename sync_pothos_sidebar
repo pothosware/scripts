@@ -2,18 +2,18 @@
 
 COMPONENTS="
 gr-pothos
-pothos-audio
-pothos-blocks
-pothos-comms
-pothos-demos
-pothos-gui
-pothos-iio
-pothos-java
-pothos-opencl
-pothos-plotters
-pothos-python
-pothos-sdr
-pothos-widgets
+PothosAudio
+PothosBlocks
+PothosComms
+PothosDemos
+PothosFlow
+PothosIIO
+PothosJava
+PothosOpenCL
+PothosPlotters
+PothosPython
+PothosSoapy
+PothosWidgets
 PothosLiquidDSP
 "
 
@@ -29,7 +29,7 @@ for PREFIX in $COMPONENTS; do
     pushd ${ROOT}/docs/${PREFIX}.wiki
     git co master
     git pull origin master
-    cp ../pothos.wiki/_Sidebar.rest .
+    cp ../PothosCore.wiki/_Sidebar.rest .
     git add _Sidebar.rest
     git ci -am "updated sidebar"
     git push origin master
