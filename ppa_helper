@@ -38,7 +38,7 @@ if __name__ == '__main__':
 
     advanced = OptionGroup(parser, "Advanced")
     parser.add_option_group(advanced)
-    advanced.add_option("--format", type="string", dest="format", help="overload source format", default='')
+    advanced.add_option("--format", type="string", dest="format", help="overload source format", default='3.0 (quilt)')
     advanced.add_option("--prefix", type="int", dest="prefix", help="prefix the version number", default=None)
     advanced.add_option("--debian-branch", type="string", dest="debian_branch", help="branch with debian files", default=None)
     (options, args) = parser.parse_args()
@@ -127,6 +127,7 @@ if __name__ == '__main__':
 
     #modify source format
     if options.format:
+        print('Using debian source format: %s'%options.format)
         sourceFormatPath = os.path.join(sourceTmpDir, 'debian', 'source', 'format')
         open(sourceFormatPath, 'w').write('%s\n'%options.format)
 
