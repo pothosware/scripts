@@ -137,7 +137,9 @@ if __name__ == '__main__':
         originURL = subprocess.check_output(['git -C %s remote get-url origin'%sourceTmpDir], shell=True).strip()
         print('originURL=%s'%originURL)
         m = re.match('^git@github.com:(.+)/(.+)\.git$', originURL)
-        if not m: raise Exception('Cant parse URL: %s'%originURL)
+        if not m:
+            m = re.match('^https://github.com/(.+)/(.+)\.git$', originURL)
+            if not m: raise Exception('Cant parse URL: %s'%originURL)
         orgName, proj = m.groups()
         fetchURL = 'https://github.com/%s/%s/archive/%s.tar.gz'%(orgName, proj, latestTag)
         download(fetchURL, origTarBall)
