@@ -15,6 +15,13 @@ def git_cmd(d, *args):
     if proc.wait() != 0: raise Exception("Failed %s"%cmd)
     return proc.communicate()[0].decode('utf-8')
 
+def get_standards_version():
+    for line in open('/usr/share/lintian/data/standards-version/release-dates').readlines():
+        line = line.strip()
+        if not line: continue
+        if line.startswith('#'): continue
+        return line.split()[0].strip()
+
 def main():
 
     #resources to write
@@ -40,15 +47,25 @@ def main():
     yyyymmdd = '%s-%0.2d-%0.2d'%(date.year, date.month, date.day)
     rfc2822 = email.utils.format_datetime(date)
 
+    #modifications to the control
+    debControlOut = list()
+    for line in open(debControlPath).readlines():
+        if line.startswith('Standards-Version:'):
+            line = 'Standards-Version: %s\n'%get_standards_version()
+        debControlOut.append(line)
+
     #modifications to the changelog
     changelogOut = list()
+    changelogReplaced = False
     for line in open(changelogPath).readlines():
         m = re.match('^Release ([\.0-9a-z]+) \(pending\)$', line.strip())
-        if m:
+        if m and not changelogReplaced:
+            changelogReplaced = True
             line = line.replace('pending', yyyymmdd)
             changelogHeader = line.strip()
             version = m.groups()[0]
         changelogOut.append(line)
+    assert(changelogReplaced)
     assert(changelogHeader)
     assert(version)
 
@@ -118,6 +135,7 @@ def main():
 
     #write the new files result
     open(changelogPath, 'w').write(''.join(changelogOut))
+    open(debControlPath, 'w').write(''.join(debControlOut))
     open(debChangelogPath, 'w').write(debChangelogOut)
     open(debCopyrightPath, 'w').write(''.join(debCopyrightOut))
 
