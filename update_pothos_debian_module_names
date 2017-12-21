@@ -3,25 +3,17 @@
 import os
 import re
 import sys
-import subprocess
-
-def git_cmd(d, *args):
-    args = ['"%s"'%a if ' ' in a else a for a in args]
-    cmd = 'git -C %s %s'%(d, ' '.join(args))
-    print(cmd)
-    proc = subprocess.Popen(args=[cmd], stdout=subprocess.PIPE, shell=True)
-    if proc.wait() != 0: raise Exception("Failed %s"%cmd)
-    return proc.communicate()[0].decode('utf-8')
+from pothos_scripts_common import *
 
 SUBMODULES = [
-'pothos-audio',
-'pothos-blocks',
-'pothos-comms',
-'pothos-gui',
-'pothos-plotters',
-'pothos-python',
-'pothos-sdr',
-'pothos-widgets',
+'PothosAudio',
+'PothosBlocks',
+'PothosComms',
+'PothosFlow',
+'PothosPlotters',
+'PothosPython',
+'PothosSoapy',
+'PothosWidgets',
 ]
 
 def main():
@@ -32,18 +24,11 @@ def main():
     BRANCH = sys.argv[2]
 
     #extract ABI
-    for line in open(os.path.join(ROOT, 'pothos', 'include', 'Pothos', 'System', 'Version.hpp')).readlines():
+    for line in open(os.path.join(ROOT, 'PothosCore', 'include', 'Pothos', 'System', 'Version.hpp')).readlines():
         m = re.match('#define POTHOS_ABI_VERSION "(.+)"', line.strip())
         if m: libraryABI = m.groups()[0]
     assert(libraryABI)
     print("libraryABI=%s"%libraryABI)
-
-    #extract Standards-Version
-    for line in open(os.path.join(ROOT, 'pothos', 'debian', 'control')).readlines():
-        m = re.match('Standards-Version:\s*(.+)', line.strip())
-        if m: standardsVersion = m.groups()[0]
-    assert(standardsVersion)
-    print("standardsVersion=%s"%standardsVersion)
 
     for SUBMODULE in SUBMODULES:
 
@@ -58,8 +43,6 @@ def main():
             outputLines = list()
             outputFile = os.path.join(debianDir, resource)
             for line in open(outputFile).readlines():
-                m = re.match('Standards-Version:\s*(.+)', line.strip())
-                if m: line = line.replace(m.groups()[0], standardsVersion)
                 m = re.match('.*pothos(.+)-modules', line.strip())
                 if m: line = line.replace('pothos'+m.groups()[0], 'pothos'+libraryABI)
                 outputLines.append(line)

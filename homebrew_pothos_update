@@ -3,17 +3,9 @@
 import os
 import re
 import sys
-import subprocess
 import requests
 from hashlib import sha256
-
-def git_cmd(d, *args):
-    args = ['"%s"'%a if ' ' in a else a for a in args]
-    cmd = 'git -C %s %s'%(d, ' '.join(args))
-    print(cmd)
-    proc = subprocess.Popen(args=[cmd], stdout=subprocess.PIPE, shell=True)
-    if proc.wait() != 0: raise Exception("Failed %s"%cmd)
-    return proc.communicate()[0].decode('utf-8')
+from pothos_scripts_common import *
 
 def main():
     if len(sys.argv) != 2:

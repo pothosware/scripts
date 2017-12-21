@@ -3,15 +3,7 @@
 import os
 import re
 import sys
-import subprocess
-
-def git_cmd(d, *args):
-    args = ['"%s"'%a if ' ' in a else a for a in args]
-    cmd = 'git -C %s %s'%(d, ' '.join(args))
-    print(cmd)
-    proc = subprocess.Popen(args=[cmd], stdout=subprocess.PIPE, shell=True)
-    if proc.wait() != 0: raise Exception("Failed %s"%cmd)
-    return proc.communicate()[0].decode('utf-8')
+from pothos_scripts_common import *
 
 SUBMODULES = [
 'SoapyAirspy',
@@ -39,13 +31,6 @@ def main():
     assert(libraryABI)
     print("libraryABI=%s"%libraryABI)
 
-    #extract Standards-Version
-    for line in open(os.path.join(ROOT, 'SoapySDR', 'debian', 'control')).readlines():
-        m = re.match('Standards-Version:\s*(.+)', line.strip())
-        if m: standardsVersion = m.groups()[0]
-    assert(standardsVersion)
-    print("standardsVersion=%s"%standardsVersion)
-
     for SUBMODULE in SUBMODULES:
 
         debianDir = os.path.join(ROOT, SUBMODULE, 'debian')
@@ -59,8 +44,6 @@ def main():
             outputLines = list()
             outputFile = os.path.join(debianDir, resource)
             for line in open(outputFile).readlines():
-                m = re.match('Standards-Version:\s*(.+)', line.strip())
-                if m: line = line.replace(m.groups()[0], standardsVersion)
                 m = re.match('.*soapysdr(.+)-module', line.strip())
                 if m: line = line.replace('soapysdr'+m.groups()[0], 'soapysdr'+libraryABI)
                 outputLines.append(line)
