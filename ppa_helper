@@ -39,7 +39,7 @@ if __name__ == '__main__':
     advanced = OptionGroup(parser, "Advanced")
     parser.add_option_group(advanced)
     advanced.add_option("--format", type="string", dest="format", help="overload source format", default='3.0 (quilt)')
-    advanced.add_option("--prefix", type="int", dest="prefix", help="prefix the version number", default=None)
+    advanced.add_option("--epoch", type="int", dest="epoch", help="epoch for the version number", default=None)
     advanced.add_option("--debian-branch", type="string", dest="debian_branch", help="branch with debian files", default=None)
     (options, args) = parser.parse_args()
 
@@ -112,12 +112,11 @@ if __name__ == '__main__':
         packageVersion = "%s.%d.%s"%(packageVersion, commitsSince, shortHash)
 
     #prefix the version number (helps with accidentally superseded packages)
-    if options.prefix is not None:
-        packageVersion = "%d.%s"%(options.prefix, packageVersion)
+    packageEpoch = "%d:"%options.epoch if options.epoch is not None else ''
 
     #modify changelog
     newChangelogEntries = [
-        '%s (%s-%s~%s) %s; urgency=%s\n'%(packageName, packageVersion, options.suffix, options.series, options.series, packageUrgency),
+        '%s (%s%s-%s~%s) %s; urgency=%s\n'%(packageName, packageEpoch, packageVersion, options.suffix, options.series, options.series, packageUrgency),
         '\n',
         '  * PPA helper upload script\n',
         '\n',
@@ -158,6 +157,7 @@ if __name__ == '__main__':
         '--git-export-dir=%s'%binaryTmpDir,
         '-S', #make source package
         '-sa', #include source
+        '-d', #no-check-builddeps
         ]))
     os.chdir(oldDir)
     if gbpStatus != 0: raise Exception('buildpackage failed %d'%gbpStatus)
