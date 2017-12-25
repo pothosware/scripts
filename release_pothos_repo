@@ -90,6 +90,10 @@ def main():
     except Exception as ex:
         raise Exception("Failed to parse '%s': %s"%(tag0, str(ex)))
 
+    #known project renames for git tags
+    if tag_prefix == 'pothos-gui': tag_prefix = 'pothos-flow'
+    if tag_prefix == 'pothos-sdr': tag_prefix = 'pothos-soapy'
+
     print('Commit summary:')
     print('  branch=%s'%branchName)
     print('  version=%s'%version)
