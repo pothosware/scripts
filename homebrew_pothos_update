@@ -27,8 +27,8 @@ def main():
                 currTag = m.groups()[1]
                 repoDir = os.path.join(ROOT, repoName)
                 git_cmd(repoDir, 'remote', 'update')
-                tags = git_cmd(repoDir, 'tag', '-n').strip().splitlines()
-                latestTag = sorted(tags)[-1].split()[0]
+                tags = git_cmd(repoDir, 'tag', '-n', '--sort', 'taggerdate').strip().splitlines()
+                latestTag = tags[-1].split()[0]
                 print(latestTag)
                 if latestTag != currTag:
                     print('  Update recipe %s from %s -> %s'%(repoName, currTag, latestTag))
