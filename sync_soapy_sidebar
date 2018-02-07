@@ -2,6 +2,7 @@
 
 COMPONENTS="
 SoapyAirspy
+SoapyAirspyHF
 SoapyAudio
 SoapyBladeRF
 SoapyHackRF
