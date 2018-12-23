@@ -27,6 +27,12 @@ def download(url, dest):
             handle.write(chunk)
     print('Done!')
 
+def seriesToVersion(series):
+    series = series.lower()
+    if series == 'xenial': return '16.04'
+    version = 18.0 + (ord(series[0])-ord('b'))/2.0 #bionic is 18.04
+    return "%d.%s"%(int(version), '04' if int(version) == version else '10')
+
 if __name__ == '__main__':
     parser = OptionParser()
     parser.add_option("--tmp", type="string", dest="tmp", help="path to temp directory", default='/tmp')
@@ -113,10 +119,11 @@ if __name__ == '__main__':
 
     #prefix the version number (helps with accidentally superseded packages)
     packageEpoch = "%d:"%options.epoch if options.epoch is not None else ''
+    ubuntuVersion = 'ubuntu'+seriesToVersion(options.series)
 
     #modify changelog
     newChangelogEntries = [
-        '%s (%s%s-%s~%s) %s; urgency=%s\n'%(packageName, packageEpoch, packageVersion, options.suffix, options.series, options.series, packageUrgency),
+        '%s (%s%s-%s~%s) %s; urgency=%s\n'%(packageName, packageEpoch, packageVersion, options.suffix, ubuntuVersion, options.series, packageUrgency),
         '\n',
         '  * PPA helper upload script\n',
         '\n',
@@ -161,7 +168,7 @@ if __name__ == '__main__':
         ]))
     os.chdir(oldDir)
     if gbpStatus != 0: raise Exception('buildpackage failed %d'%gbpStatus)
-    sourceChangesFile = os.path.join(binaryTmpDir, '%s_%s-%s~%s_source.changes'%(packageName, packageVersion, options.suffix, options.series))
+    sourceChangesFile = os.path.join(binaryTmpDir, '%s_%s-%s~%s_source.changes'%(packageName, packageVersion, options.suffix, ubuntuVersion))
     print(sourceChangesFile)
     if not os.path.exists(sourceChangesFile): raise Exception('Failed %s'%sourceChangesFile)
 
