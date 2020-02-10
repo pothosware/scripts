@@ -36,6 +36,7 @@ SoapyPlutoSDR
 SoapyFCDPP
 SoapyNetSDR
 SoapySidekiq
+SoapyVOLKConverters
 "
 
 ROOT=$1
