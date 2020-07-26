@@ -11,6 +11,7 @@ PothosBlocks
 PothosComms
 PothosDemos
 PothosFlow
+PothosGPU
 PothosIIO
 PothosJava
 PothosOpenCL
