@@ -30,13 +30,13 @@ fi
 for PREFIX in $COMPONENTS; do
     echo "======== ${PREFIX} ========"
     pushd ${ROOT}/docs/${PREFIX}.wiki
-    git co master
+    git checkout master
     git pull origin master
     cp ../SoapySDR.wiki/_Sidebar.rest .
     cp ../SoapySDR.wiki/_Footer.md .
     git add _Sidebar.rest
     git add _Footer.md
-    git ci -am "updated sidebar"
+    git commit -am "updated sidebar"
     git push origin master
     popd
 done
