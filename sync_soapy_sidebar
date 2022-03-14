@@ -18,6 +18,7 @@ SoapyFCDPP
 SoapyNetSDR
 SoapySidekiq
 SoapyVOLKConverters
+SoapySpyServer
 "
 
 ROOT=$1
